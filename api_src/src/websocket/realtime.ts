@@ -3,15 +3,15 @@
  */
 
 import { FastifyPluginAsync } from 'fastify';
-import { PolymarketSDK } from '../../../src/index.js';
-import { WebSocketManager } from '../../../src/clients/websocket-manager.js';
-import { RealtimeService } from '../../../src/services/realtime-service.js';
+import { PolymarketSDK } from '../../../dist/index.js';
+import { WebSocketManager } from '../../../dist/clients/websocket-manager.js';
+import { RealtimeService } from '../../../dist/services/realtime-service.js';
 
 const sdk = new PolymarketSDK();
 
 export const realtimeRoutes: FastifyPluginAsync = async (fastify) => {
     // WebSocket 连接
-    fastify.get('/market/:conditionId', { websocket: true }, async (connection, request) => {
+    fastify.get('/market/:conditionId', { websocket: true }, async (connection: any, request) => {
         const { conditionId } = request.params as { conditionId: string };
 
         fastify.log.info(`WebSocket 连接: ${conditionId}`);

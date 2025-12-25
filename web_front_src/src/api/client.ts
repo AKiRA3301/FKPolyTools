@@ -29,4 +29,18 @@ export const walletApi = {
     getActivity: (address: string, limit = 50) => api.get(`/wallets/${address}/activity?limit=${limit}`),
 };
 
+// 鲸鱼发现 API
+export const whaleApi = {
+    start: (config: { infuraApiKey?: string; minTradeUsdcValue?: number; minWinRate?: number; minPnl?: number }) =>
+        api.post('/whale/start', config),
+    stop: () => api.post('/whale/stop'),
+    getStatus: () => api.get('/whale/status'),
+    getWhales: (sort = 'pnl', limit = 50) => api.get(`/whale/whales?sort=${sort}&limit=${limit}`),
+    getTrades: (limit = 100) => api.get(`/whale/trades?limit=${limit}`),
+    getConfig: () => api.get('/whale/config'),
+    updateConfig: (config: object) => api.put('/whale/config', config),
+    getProfile: (address: string, period: '24h' | '7d' | '30d' | 'all' = 'all') =>
+        api.get(`/whale/profile/${address}?period=${period}`),
+};
+
 export default api;

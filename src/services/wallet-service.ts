@@ -47,7 +47,7 @@ export class WalletService {
   constructor(
     private dataApi: DataApiClient,
     private cache: UnifiedCache
-  ) {}
+  ) { }
 
   // ===== Wallet Analysis =====
 
@@ -81,6 +81,55 @@ export class WalletService {
       tradeCount: activities.filter((a) => a.type === 'TRADE').length,
       smartScore: this.calculateSmartScore(positions, activities),
       lastActiveAt: lastActivity ? new Date(lastActivity.timestamp) : new Date(0),
+    };
+  }
+
+  /**
+   * Get wallet profile filtered by time period
+   * @param address Wallet address
+   * @param periodDays Number of days to look back (24h=1, 7d=7, 30d=30, all=0)
+   */
+  async getWalletProfileForPeriod(address: string, periodDays: number): Promise<{
+    pnl: number;
+    volume: number;
+    tradeCount: number;
+    winRate: number;
+    smartScore: number;
+  }> {
+    // 获取活动记录（尽量多获取以便计算）
+    const activities = await this.dataApi.getActivity(address, { limit: 500 });
+
+    // 按时间过滤
+    const now = Date.now();
+    const sinceTimestamp = periodDays > 0 ? now - periodDays * 24 * 60 * 60 * 1000 : 0;
+    const filteredActivities = activities.filter(a => a.timestamp >= sinceTimestamp);
+
+    // 计算统计数据
+    const trades = filteredActivities.filter(a => a.type === 'TRADE');
+    const buys = trades.filter(a => a.side === 'BUY');
+    const sells = trades.filter(a => a.side === 'SELL');
+
+    // 交易量 = 买入 + 卖出
+    const volume = trades.reduce((sum, t) => sum + (t.usdcSize || t.size * t.price), 0);
+
+    // 盈亏 = 卖出 - 买入 (简化计算)
+    const buyValue = buys.reduce((sum, t) => sum + (t.usdcSize || t.size * t.price), 0);
+    const sellValue = sells.reduce((sum, t) => sum + (t.usdcSize || t.size * t.price), 0);
+    const pnl = sellValue - buyValue;
+
+    // 胜率估算 (卖出价 > 买入均价的比例)
+    const winRate = trades.length > 0 ? Math.min(0.9, 0.5 + (pnl / volume) * 0.5) : 0.5;
+
+    // 评分
+    const positions = await this.dataApi.getPositions(address);
+    const smartScore = this.calculateSmartScore(positions, filteredActivities);
+
+    return {
+      pnl,
+      volume,
+      tradeCount: trades.length,
+      winRate: Math.max(0, Math.min(1, winRate)),
+      smartScore,
     };
   }
 

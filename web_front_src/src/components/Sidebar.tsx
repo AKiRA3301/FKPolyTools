@@ -34,6 +34,11 @@ function Sidebar() {
             icon: <WalletOutlined />,
             label: '钱包',
         },
+        {
+            key: '/whale',
+            icon: <WalletOutlined />,
+            label: '🐋 鲸鱼发现',
+        },
     ];
 
     return (

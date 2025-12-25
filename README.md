@@ -422,6 +422,76 @@ wsManager.on('bookUpdate', (update) => {
 });
 ```
 
+### ChainMonitorClient - 链上交易监控
+
+监控 Polygon 链上的 CTF 交易事件，用于鲸鱼发现。
+
+```typescript
+import { ChainMonitorClient } from '@catalyst-team/poly-sdk';
+
+const monitor = new ChainMonitorClient({
+  infuraApiKey: 'your-infura-key',
+  wsEnabled: true, // 使用 WebSocket (推荐)
+});
+
+await monitor.connect();
+
+// 监听所有交易
+monitor.on('transfer', (event) => {
+  console.log(`${event.from} → ${event.to}: ${event.amount} tokens`);
+});
+
+// 或使用异步迭代
+for await (const event of monitor.subscribeAllTransfers()) {
+  console.log(event);
+}
+```
+
+### 鲸鱼发现服务 (Whale Discovery)
+
+从链上交易中自动发现潜在的跟单目标。
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  阶段 1: 链上预过滤（无 API 调用）                                │
+│  • 过滤小额交易 (< $50)                                         │
+│  • 跳过已分析地址 (24h 缓存)                                     │
+│  • 排除合约和官方地址                                            │
+├─────────────────────────────────────────────────────────────────┤
+│  阶段 2: 批量分析（每分钟 10 个地址）                              │
+│  • 获取钱包画像                                                  │
+│  • 评估胜率、盈利、交易量                                         │
+│  • 符合条件则标记为鲸鱼                                           │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**配置文件 (config.json):**
+
+```json
+{
+  "INFURA_API_KEY": "your-infura-api-key",
+  "API_BASE_URL": "http://localhost:3000"
+}
+```
+
+**启动方式:**
+
+```bash
+# 1. 启动 API 后端
+cd api_src && pnpm install && pnpm dev
+
+# 2. 使用控制台启动发现
+cd console_src && pnpm install
+pnpm tsx src/index.ts whale start
+
+# 3. 查看发现的鲸鱼
+pnpm tsx src/index.ts whale list
+
+# 4. 或使用 Web 前端
+cd web_front_src && pnpm install && pnpm dev
+# 访问 http://localhost:5173/whale
+```
+
 ## 示例
 
 | 示例 | 说明 | 命令 |

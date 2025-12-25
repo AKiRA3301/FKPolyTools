@@ -17,7 +17,7 @@ function AppHeader() {
         >
             <LineChartOutlined style={{ fontSize: 24, color: '#1890ff', marginRight: 12 }} />
             <Title level={4} style={{ margin: 0, color: '#fff' }}>
-                Polymarket Dashboard
+                FK Polymarket Tools
             </Title>
         </Header>
     );

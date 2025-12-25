@@ -3,7 +3,7 @@
  */
 
 import { FastifyPluginAsync } from 'fastify';
-import { PolymarketSDK, checkArbitrage } from '../../../src/index.js';
+import { PolymarketSDK, checkArbitrage } from '../../../dist/index.js';
 import { config } from '../config.js';
 
 const sdk = new PolymarketSDK();
@@ -107,7 +107,6 @@ export const arbitrageRoutes: FastifyPluginAsync = async (fastify) => {
                     profit: arb.profit,
                     profitPercent: arb.profit * 100,
                     action: arb.action,
-                    description: arb.description,
                 };
             }
 

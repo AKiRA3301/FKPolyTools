@@ -3,7 +3,7 @@
  */
 
 import { FastifyPluginAsync } from 'fastify';
-import { PolymarketSDK } from '../../../src/index.js';
+import { PolymarketSDK } from '../../../dist/index.js';
 
 const sdk = new PolymarketSDK();
 

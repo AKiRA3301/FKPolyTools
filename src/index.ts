@@ -129,6 +129,21 @@ export type {
 } from './clients/ctf-client.js';
 export { RevertReason } from './clients/ctf-client.js';
 
+// Chain Monitor (On-chain Event Monitoring)
+export {
+  ChainMonitorClient,
+  CTF_EXCHANGE,
+  NEG_RISK_CTF_EXCHANGE as CHAIN_MONITOR_NEG_RISK_EXCHANGE,
+  OFFICIAL_ADDRESSES,
+  isContractAddress,
+  isOfficialAddress,
+} from './clients/chain-monitor-client.js';
+export type {
+  ChainMonitorConfig,
+  TransferEvent,
+  ChainMonitorStats,
+} from './clients/chain-monitor-client.js';
+
 // Bridge (Cross-chain Deposits)
 export {
   BridgeClient,
@@ -213,7 +228,7 @@ import { PolymarketError, ErrorCode } from './core/errors.js';
 import { createUnifiedCache, type UnifiedCache } from './core/unified-cache.js';
 
 // Re-export for backward compatibility
-export interface PolymarketSDKConfig extends PolySDKOptions {}
+export interface PolymarketSDKConfig extends PolySDKOptions { }
 
 export class PolymarketSDK {
   // Infrastructure

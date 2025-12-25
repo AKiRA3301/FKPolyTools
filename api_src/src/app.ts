@@ -13,11 +13,15 @@ import { config } from './config.js';
 import { marketRoutes } from './routes/markets.js';
 import { arbitrageRoutes } from './routes/arbitrage.js';
 import { walletRoutes } from './routes/wallets.js';
+import { whaleDiscoveryRoutes } from './routes/whale-discovery.js';
 import { realtimeRoutes } from './websocket/realtime.js';
 
 export async function buildApp(): Promise<FastifyInstance> {
     const app = Fastify({
-        logger: true,
+        // 只显示 warn 和 error 级别日志
+        logger: {
+            level: 'warn',
+        },
     });
 
     // 注册插件
@@ -39,6 +43,7 @@ export async function buildApp(): Promise<FastifyInstance> {
                 { name: '市场', description: '市场数据接口' },
                 { name: '套利', description: '套利检测接口' },
                 { name: '钱包', description: '钱包分析接口' },
+                { name: '鲸鱼发现', description: '链上鲸鱼发现接口' },
             ],
         },
     });
@@ -60,6 +65,7 @@ export async function buildApp(): Promise<FastifyInstance> {
     await app.register(marketRoutes, { prefix: '/api/markets' });
     await app.register(arbitrageRoutes, { prefix: '/api/arbitrage' });
     await app.register(walletRoutes, { prefix: '/api/wallets' });
+    await app.register(whaleDiscoveryRoutes, { prefix: '/api/whale' });
     await app.register(realtimeRoutes, { prefix: '/ws' });
 
     return app;

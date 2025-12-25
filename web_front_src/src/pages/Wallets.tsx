@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Table, Typography, Spin, Alert, Card, Row, Col, Tag } from 'antd';
-import { TrophyOutlined, UserOutlined } from '@ant-design/icons';
+import { Table, Typography, Spin, Alert, Card, Row, Col, Tag, Space, message } from 'antd';
+import { TrophyOutlined, UserOutlined, CopyOutlined } from '@ant-design/icons';
 import { walletApi } from '../api/client';
 
 const { Title } = Typography;
@@ -61,10 +61,19 @@ function Wallets() {
             dataIndex: 'address',
             key: 'address',
             render: (addr: string) => (
-                <span style={{ fontFamily: 'monospace' }}>
-                    <UserOutlined style={{ marginRight: 8 }} />
-                    {addr?.slice(0, 8)}...{addr?.slice(-6)}
-                </span>
+                <Space size={4}>
+                    <span style={{ fontFamily: 'monospace' }}>
+                        <UserOutlined style={{ marginRight: 8 }} />
+                        {addr?.slice(0, 8)}...{addr?.slice(-6)}
+                    </span>
+                    <CopyOutlined
+                        style={{ color: '#888', cursor: 'pointer' }}
+                        onClick={() => {
+                            navigator.clipboard.writeText(addr);
+                            message.success('地址已复制');
+                        }}
+                    />
+                </Space>
             ),
         },
         {
@@ -131,9 +140,18 @@ function Wallets() {
                         </Col>
                         <Col flex={1}>
                             <div style={{ color: '#888', fontSize: 12 }}>第一名</div>
-                            <div style={{ fontSize: 18, fontFamily: 'monospace' }}>
-                                {topTrader.address?.slice(0, 10)}...{topTrader.address?.slice(-8)}
-                            </div>
+                            <Space size={8}>
+                                <div style={{ fontSize: 18, fontFamily: 'monospace' }}>
+                                    {topTrader.address?.slice(0, 10)}...{topTrader.address?.slice(-8)}
+                                </div>
+                                <CopyOutlined
+                                    style={{ color: '#888', cursor: 'pointer' }}
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(topTrader.address);
+                                        message.success('地址已复制');
+                                    }}
+                                />
+                            </Space>
                         </Col>
                         <Col>
                             <div style={{ textAlign: 'right' }}>
