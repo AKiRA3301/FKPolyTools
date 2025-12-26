@@ -18,7 +18,7 @@ import { realtimeRoutes } from './websocket/realtime.js';
 import { API_VERSION } from './version.js';
 
 // SDK 版本 (手动同步自 src/version.ts)
-const SDK_VERSION = '0.2.1';
+const SDK_VERSION = '0.2.2';
 
 export async function buildApp(): Promise<FastifyInstance> {
     const app = Fastify({

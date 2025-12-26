@@ -1,6 +1,7 @@
 // API 模块版本号
 // 每次 api_src 代码变更时更新此版本
-export const API_VERSION = '1.0.0';
+export const API_VERSION = '1.0.1';
 
 // 更新日志
+// 1.0.1 - 添加批量缓存接口，优化时间段切换性能
 // 1.0.0 - 初始版本，包含鲸鱼发现、缓存系统、PnL修正

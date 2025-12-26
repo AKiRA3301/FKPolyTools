@@ -7,7 +7,7 @@ import { config } from './config.js';
 import { API_VERSION } from './version.js';
 
 // @ts-ignore - SDK 版本从编译后的 dist 目录导入
-const SDK_VERSION = '0.2.1'; // 手动同步自 src/version.ts
+const SDK_VERSION = '0.2.2'; // 手动同步自 src/version.ts
 
 async function main() {
     console.log('🚀 启动 Polymarket API 服务...');
