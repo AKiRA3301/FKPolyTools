@@ -480,13 +480,6 @@ for await (const event of monitor.subscribeAllTransfers()) {
 # 1. 启动 API 后端
 cd api_src && pnpm install && pnpm dev
 
-# 2. 使用控制台启动发现
-cd console_src && pnpm install
-pnpm tsx src/index.ts whale start
-
-# 3. 查看发现的鲸鱼
-pnpm tsx src/index.ts whale list
-
 # 4. 或使用 Web 前端
 cd web_front_src && pnpm install && pnpm dev
 # 访问 http://localhost:5173/whale

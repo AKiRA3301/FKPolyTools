@@ -66,24 +66,23 @@ function WhaleDiscovery() {
         }
     }, []);
 
-    // 加载时间段数据
+    // 加载时间段数据 - 顺序处理避免 Rate Limit
     const loadPeriodData = useCallback(async (period: '24h' | '7d' | '30d' | 'all', addresses: string[]) => {
         if (addresses.length === 0) return;
 
         setLoadingPeriod(true);
         const newPeriodData: Record<string, any> = {};
 
-        // 批量请求（每个地址一个请求）
-        const promises = addresses.map(async (address) => {
+        // 顺序请求，避免 Rate Limit
+        for (const address of addresses) {
             try {
                 const res = await whaleApi.getProfile(address, period);
                 newPeriodData[address] = res.data;
             } catch {
                 newPeriodData[address] = { pnl: 0, volume: 0, tradeCount: 0, winRate: 0, smartScore: 0 };
             }
-        });
+        }
 
-        await Promise.all(promises);
         setPeriodData(newPeriodData);
         setLoadingPeriod(false);
     }, []);
@@ -297,12 +296,6 @@ function WhaleDiscovery() {
                 return <Tag color="blue">{score || 0}</Tag>;
             },
             width: 70,
-        },
-        {
-            title: '观察交易',
-            dataIndex: 'tradesObserved',
-            key: 'tradesObserved',
-            width: 100,
         },
         {
             title: '发现时间',

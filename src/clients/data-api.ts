@@ -214,21 +214,28 @@ export class DataApiClient {
     const pageSize = 100;
     const allActivities: Activity[] = [];
     let offset = 0;
+    const maxPages = Math.ceil(maxRecords / pageSize); // Limit max pages
 
-    while (allActivities.length < maxRecords) {
-      const activities = await this.getActivity(address, {
-        limit: pageSize,
-        offset,
-        type,
-      });
+    for (let page = 0; page < maxPages; page++) {
+      try {
+        const activities = await this.getActivity(address, {
+          limit: pageSize,
+          offset,
+          type,
+        });
 
-      if (activities.length === 0) break;
+        if (activities.length === 0) break;
 
-      allActivities.push(...activities);
-      offset += pageSize;
+        allActivities.push(...activities);
+        offset += pageSize;
 
-      // If we got fewer than pageSize, there's no more data
-      if (activities.length < pageSize) break;
+        // If we got fewer than pageSize, there's no more data
+        if (activities.length < pageSize) break;
+      } catch (error) {
+        // Log error but continue with what we have
+        console.error(`[DataAPI] Pagination error at offset ${offset}:`, error);
+        break;
+      }
     }
 
     return allActivities.slice(0, maxRecords);
