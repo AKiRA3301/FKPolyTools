@@ -42,7 +42,6 @@
     "smart-money"
   ],
   "author": "Catalyst Team",
-  "license": "MIT",
   "publishConfig": {
     "access": "public"
   },
