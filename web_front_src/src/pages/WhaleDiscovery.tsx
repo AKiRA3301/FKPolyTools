@@ -4,7 +4,7 @@ import {
     Statistic, Badge, Input, Form, Modal, message, InputNumber, Avatar, Radio
 } from 'antd';
 import {
-    PlayCircleOutlined, PauseOutlined, ReloadOutlined, SettingOutlined, CopyOutlined
+    PlayCircleOutlined, PauseOutlined, ReloadOutlined, SettingOutlined, CopyOutlined, DownloadOutlined
 } from '@ant-design/icons';
 import { whaleApi } from '../api/client';
 
@@ -198,6 +198,74 @@ function WhaleDiscovery() {
         return `$${amount.toFixed(0)}`;
     };
 
+    // 下载 CSV
+    const [downloading, setDownloading] = useState(false);
+    const handleDownloadCSV = async () => {
+        if (whales.length === 0) {
+            message.warning('暂无数据可下载');
+            return;
+        }
+
+        setDownloading(true);
+        message.loading({ content: '正在获取所有时间段数据...', key: 'csv' });
+
+        try {
+            // 获取所有时间段的数据
+            const allData: Record<string, Record<string, any>> = {};
+            const periods = ['24h', '7d', '30d', 'all'] as const;
+
+            for (const period of periods) {
+                for (const whale of whales) {
+                    try {
+                        const res = await whaleApi.getProfile(whale.address, period);
+                        if (!allData[whale.address]) {
+                            allData[whale.address] = { address: whale.address };
+                        }
+                        allData[whale.address][`pnl_${period}`] = res.data.pnl || 0;
+                        allData[whale.address][`volume_${period}`] = res.data.volume || 0;
+                        allData[whale.address][`trades_${period}`] = res.data.tradeCount || 0;
+                        allData[whale.address][`winRate_${period}`] = res.data.winRate || 0;
+                        allData[whale.address][`score_${period}`] = res.data.smartScore || 0;
+                    } catch {
+                        // 跳过失败的请求
+                    }
+                }
+            }
+
+            // 生成 CSV
+            const headers = [
+                'Address',
+                'PnL_24h', 'Volume_24h', 'Trades_24h', 'WinRate_24h', 'Score_24h',
+                'PnL_7d', 'Volume_7d', 'Trades_7d', 'WinRate_7d', 'Score_7d',
+                'PnL_30d', 'Volume_30d', 'Trades_30d', 'WinRate_30d', 'Score_30d',
+                'PnL_All', 'Volume_All', 'Trades_All', 'WinRate_All', 'Score_All',
+            ];
+
+            const rows = Object.values(allData).map(d => [
+                d.address,
+                d.pnl_24h?.toFixed(2), d.volume_24h?.toFixed(2), d.trades_24h, (d.winRate_24h * 100).toFixed(1) + '%', d.score_24h,
+                d.pnl_7d?.toFixed(2), d.volume_7d?.toFixed(2), d.trades_7d, (d.winRate_7d * 100).toFixed(1) + '%', d.score_7d,
+                d.pnl_30d?.toFixed(2), d.volume_30d?.toFixed(2), d.trades_30d, (d.winRate_30d * 100).toFixed(1) + '%', d.score_30d,
+                d.pnl_all?.toFixed(2), d.volume_all?.toFixed(2), d.trades_all, (d.winRate_all * 100).toFixed(1) + '%', d.score_all,
+            ]);
+
+            const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `whale_data_${new Date().toISOString().slice(0, 10)}.csv`;
+            link.click();
+            URL.revokeObjectURL(url);
+
+            message.success({ content: 'CSV 下载成功！', key: 'csv' });
+        } catch (error) {
+            message.error({ content: '下载失败', key: 'csv' });
+        } finally {
+            setDownloading(false);
+        }
+    };
+
     const columns = [
         {
             title: '#',
@@ -211,20 +279,19 @@ function WhaleDiscovery() {
             render: (_: any, record: WhaleCandidate) => (
                 <Space size={8}>
                     <Avatar
-                        src={record.profileImage}
                         size={32}
                         style={{ backgroundColor: '#1890ff' }}
                     >
-                        {record.userName?.charAt(0) || record.address?.slice(2, 4).toUpperCase()}
+                        {record.address?.slice(2, 4).toUpperCase()}
                     </Avatar>
                     <div>
                         <a
                             href={`https://polymarket.com/profile/${record.address}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            style={{ fontWeight: 500, color: record.userName ? '#1890ff' : '#fff' }}
+                            style={{ fontWeight: 500, color: '#1890ff' }}
                         >
-                            {record.userName || `${record.address?.slice(0, 6)}...${record.address?.slice(-4)}`}
+                            {`${record.address?.slice(0, 6)}...${record.address?.slice(-4)}`}
                         </a>
                         <Space size={4}>
                             <Text type="secondary" style={{ fontSize: 11 }}>
@@ -241,7 +308,7 @@ function WhaleDiscovery() {
                     </div>
                 </Space>
             ),
-            width: 250,
+            width: 220,
         },
         {
             title: '盈亏',
@@ -436,6 +503,14 @@ function WhaleDiscovery() {
                                 <Radio.Button value="all">全部</Radio.Button>
                             </Radio.Group>
                             {loadingPeriod && <Spin size="small" />}
+                            <Button
+                                icon={<DownloadOutlined />}
+                                size="small"
+                                onClick={handleDownloadCSV}
+                                loading={downloading}
+                            >
+                                导出CSV
+                            </Button>
                         </Space>
                     </Col>
                 </Row>
