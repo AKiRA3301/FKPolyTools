@@ -265,15 +265,29 @@ export async function whaleDiscoveryRoutes(fastify: FastifyInstance): Promise<vo
         sdk = new PolymarketSDK();
         whaleService.setWalletAnalyzer(async (address: string) => {
             try {
+                // 先检查是否已有缓存
+                if (!isCacheValid(address)) {
+                    // 同步等待缓存完成（确保前端能立即看到所有时间段数据）
+                    console.log(`[WhaleCache] Pre-caching whale ${address}...`);
+                    await updateWhaleCache(address);
+                }
+
+                // 从缓存读取 'all' 时间段的数据返回给发现服务
+                const cached = getCachedPeriodData(address, 'all');
+                if (cached) {
+                    return {
+                        pnl: cached.pnl,
+                        winRate: cached.winRate,
+                        totalVolume: cached.volume,
+                        smartScore: cached.smartScore,
+                        totalTrades: cached.tradeCount,
+                    };
+                }
+
+                // 缓存失败，回退到直接获取
                 const profile = await sdk!.wallets.getWalletProfile(address);
                 if (!profile) return null;
 
-                // 异步触发缓存预热（不阻塞分析流程）
-                updateWhaleCache(address).catch(err =>
-                    console.error(`[WhaleCache] Background cache failed for ${address}:`, err)
-                );
-
-                // 从 WalletProfile 映射到 WhaleDiscovery 的 WalletProfile
                 return {
                     pnl: profile.realizedPnL || 0,
                     winRate: profile.avgPercentPnL > 0 ? Math.min(0.8, 0.5 + profile.avgPercentPnL / 200) : 0.4,
@@ -281,7 +295,8 @@ export async function whaleDiscoveryRoutes(fastify: FastifyInstance): Promise<vo
                     smartScore: profile.smartScore || 0,
                     totalTrades: profile.tradeCount || 0,
                 };
-            } catch {
+            } catch (err) {
+                console.error(`[WhaleAnalyzer] Failed to analyze ${address}:`, err);
                 return null;
             }
         });
