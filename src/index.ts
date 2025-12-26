@@ -14,6 +14,9 @@ export { Cache, CACHE_TTL } from './core/cache.js';
 export { PolymarketError, ErrorCode, withRetry } from './core/errors.js';
 export * from './core/types.js';
 
+// Version
+export { SDK_VERSION } from './version.js';
+
 // Cache integration (new)
 export type { UnifiedCache } from './core/unified-cache.js';
 export { createUnifiedCache } from './core/unified-cache.js';

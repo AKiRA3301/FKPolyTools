@@ -15,6 +15,10 @@ import { arbitrageRoutes } from './routes/arbitrage.js';
 import { walletRoutes } from './routes/wallets.js';
 import { whaleDiscoveryRoutes } from './routes/whale-discovery.js';
 import { realtimeRoutes } from './websocket/realtime.js';
+import { API_VERSION } from './version.js';
+
+// SDK 版本 (手动同步自 src/version.ts)
+const SDK_VERSION = '0.2.1';
 
 export async function buildApp(): Promise<FastifyInstance> {
     const app = Fastify({
@@ -59,6 +63,14 @@ export async function buildApp(): Promise<FastifyInstance> {
     // 健康检查
     app.get('/health', async () => {
         return { status: 'ok', timestamp: new Date().toISOString() };
+    });
+
+    // 版本信息端点
+    app.get('/api/version', async () => {
+        return {
+            api: API_VERSION,
+            sdk: SDK_VERSION,
+        };
     });
 
     // 注册路由

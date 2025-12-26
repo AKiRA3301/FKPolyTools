@@ -6,7 +6,8 @@ import {
 import {
     PlayCircleOutlined, PauseOutlined, ReloadOutlined, SettingOutlined, CopyOutlined, DownloadOutlined, SyncOutlined
 } from '@ant-design/icons';
-import { whaleApi } from '../api/client';
+import { whaleApi, versionApi } from '../api/client';
+import { WEB_VERSION } from '../version';
 
 const { Title, Text } = Typography;
 
@@ -48,6 +49,10 @@ function WhaleDiscovery() {
     const [loadingPeriod, setLoadingPeriod] = useState(false);
     const [form] = Form.useForm();
 
+    // 版本信息
+    const [apiVersion, setApiVersion] = useState('');
+    const [sdkVersion, setSdkVersion] = useState('');
+
     const loadStatus = useCallback(async () => {
         try {
             const res = await whaleApi.getStatus();
@@ -55,6 +60,14 @@ function WhaleDiscovery() {
         } catch {
             setStatus(null);
         }
+    }, []);
+
+    // 加载版本信息
+    useEffect(() => {
+        versionApi.getVersion().then(res => {
+            setApiVersion(res.data.api);
+            setSdkVersion(res.data.sdk);
+        }).catch(() => { });
     }, []);
 
     const loadWhales = useCallback(async () => {
@@ -659,6 +672,19 @@ function WhaleDiscovery() {
                     />
                 </Form>
             </Modal>
+
+            {/* 版本信息 */}
+            <div style={{
+                marginTop: 24,
+                padding: '12px 16px',
+                background: 'rgba(255,255,255,0.04)',
+                borderRadius: 8,
+                textAlign: 'center'
+            }}>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                    版本: Web v{WEB_VERSION} | API v{apiVersion || '...'} | SDK v{sdkVersion || '...'}
+                </Text>
+            </div>
         </div>
     );
 }

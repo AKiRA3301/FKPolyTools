@@ -46,4 +46,9 @@ export const whaleApi = {
     getCacheStatus: () => api.get('/whale/cache/status'),
 };
 
+// 版本 API
+export const versionApi = {
+    getVersion: () => api.get('/version'),
+};
+
 export default api;
