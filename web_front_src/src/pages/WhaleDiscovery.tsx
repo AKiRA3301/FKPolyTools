@@ -4,7 +4,7 @@ import {
     Statistic, Badge, Input, Form, Modal, message, InputNumber, Avatar, Radio
 } from 'antd';
 import {
-    PlayCircleOutlined, PauseOutlined, ReloadOutlined, SettingOutlined, CopyOutlined, DownloadOutlined
+    PlayCircleOutlined, PauseOutlined, ReloadOutlined, SettingOutlined, CopyOutlined, DownloadOutlined, SyncOutlined
 } from '@ant-design/icons';
 import { whaleApi } from '../api/client';
 
@@ -266,6 +266,22 @@ function WhaleDiscovery() {
         }
     };
 
+    // 刷新缓存
+    const [refreshingCache, setRefreshingCache] = useState(false);
+    const handleRefreshCache = async () => {
+        setRefreshingCache(true);
+        message.loading({ content: '正在刷新所有鲸鱼缓存...', key: 'cache' });
+
+        try {
+            const res = await whaleApi.refreshCache();
+            message.success({ content: res.data.message || '缓存刷新成功', key: 'cache' });
+        } catch (error) {
+            message.error({ content: '缓存刷新失败', key: 'cache' });
+        } finally {
+            setRefreshingCache(false);
+        }
+    };
+
     const columns = [
         {
             title: '#',
@@ -510,6 +526,14 @@ function WhaleDiscovery() {
                                 loading={downloading}
                             >
                                 导出CSV
+                            </Button>
+                            <Button
+                                icon={<SyncOutlined />}
+                                size="small"
+                                onClick={handleRefreshCache}
+                                loading={refreshingCache}
+                            >
+                                刷新缓存
                             </Button>
                         </Space>
                     </Col>

@@ -38,6 +38,108 @@ function saveConfigFile(config: any): void {
     }
 }
 
+// ===== 鲸鱼数据缓存 =====
+
+const WHALE_CACHE_FILE = path.resolve(process.cwd(), '..', 'whale_cache.json');
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 小时
+
+interface WhalePeriodData {
+    pnl: number;
+    volume: number;
+    tradeCount: number;
+    winRate: number;
+    smartScore: number;
+}
+
+interface WhaleCache {
+    [address: string]: {
+        updatedAt: number; // timestamp
+        periods: {
+            '24h': WhalePeriodData;
+            '7d': WhalePeriodData;
+            '30d': WhalePeriodData;
+            'all': WhalePeriodData;
+        };
+    };
+}
+
+let whaleCacheData: WhaleCache = {};
+
+// 读取缓存文件
+function loadWhaleCache(): void {
+    try {
+        if (fs.existsSync(WHALE_CACHE_FILE)) {
+            const data = fs.readFileSync(WHALE_CACHE_FILE, 'utf-8');
+            whaleCacheData = JSON.parse(data);
+            console.log(`[WhaleCache] Loaded ${Object.keys(whaleCacheData).length} whales from cache`);
+        }
+    } catch (error) {
+        console.error('[WhaleCache] Failed to load cache:', error);
+        whaleCacheData = {};
+    }
+}
+
+// 保存缓存文件
+function saveWhaleCache(): void {
+    try {
+        fs.writeFileSync(WHALE_CACHE_FILE, JSON.stringify(whaleCacheData, null, 2), 'utf-8');
+    } catch (error) {
+        console.error('[WhaleCache] Failed to save cache:', error);
+    }
+}
+
+// 检查缓存是否过期
+function isCacheValid(address: string): boolean {
+    const cache = whaleCacheData[address];
+    if (!cache) return false;
+    return Date.now() - cache.updatedAt < CACHE_TTL_MS;
+}
+
+// 获取缓存数据
+function getCachedPeriodData(address: string, period: '24h' | '7d' | '30d' | 'all'): WhalePeriodData | null {
+    if (!isCacheValid(address)) return null;
+    return whaleCacheData[address]?.periods[period] || null;
+}
+
+// 更新缓存数据
+async function updateWhaleCache(address: string): Promise<void> {
+    if (!sdk) {
+        sdk = new PolymarketSDK();
+    }
+
+    const periods = ['24h', '7d', '30d', 'all'] as const;
+    const periodDaysMap = { '24h': 1, '7d': 7, '30d': 30, 'all': 0 };
+
+    const periodsData: any = {};
+
+    for (const period of periods) {
+        try {
+            const stats = await sdk.wallets.getWalletProfileForPeriod(address, periodDaysMap[period]);
+            periodsData[period] = {
+                pnl: stats.pnl,
+                volume: stats.volume,
+                tradeCount: stats.tradeCount,
+                winRate: stats.winRate,
+                smartScore: stats.smartScore,
+            };
+        } catch (error) {
+            console.error(`[WhaleCache] Failed to fetch ${period} data for ${address}:`, error);
+            periodsData[period] = { pnl: 0, volume: 0, tradeCount: 0, winRate: 0.5, smartScore: 50 };
+        }
+    }
+
+    whaleCacheData[address] = {
+        updatedAt: Date.now(),
+        periods: periodsData,
+    };
+
+    saveWhaleCache();
+    console.log(`[WhaleCache] Updated cache for ${address}`);
+}
+
+// 启动时加载缓存
+loadWhaleCache();
+
 // ===== Routes =====
 
 export async function whaleDiscoveryRoutes(fastify: FastifyInstance): Promise<void> {
@@ -251,6 +353,80 @@ export async function whaleDiscoveryRoutes(fastify: FastifyInstance): Promise<vo
         }));
     });
 
+    // POST /api/whale/cache/refresh - 刷新所有鲸鱼缓存
+    fastify.post('/cache/refresh', {
+        schema: {
+            tags: ['鲸鱼发现'],
+            summary: '刷新所有鲸鱼数据缓存',
+            response: {
+                200: {
+                    type: 'object',
+                    properties: {
+                        status: { type: 'string' },
+                        count: { type: 'number' },
+                        message: { type: 'string' },
+                    },
+                },
+            },
+        },
+    }, async () => {
+        if (!whaleService) {
+            return { status: 'error', count: 0, message: 'Service not running' };
+        }
+
+        const whales = whaleService.getWhales('pnl', 100);
+        let updated = 0;
+
+        // 顺序更新每个鲸鱼的缓存
+        for (const whale of whales) {
+            try {
+                await updateWhaleCache(whale.address);
+                updated++;
+            } catch (error) {
+                console.error(`[WhaleCache] Failed to update ${whale.address}:`, error);
+            }
+        }
+
+        return { status: 'success', count: updated, message: `Updated ${updated}/${whales.length} whales` };
+    });
+
+    // GET /api/whale/cache/status - 获取缓存状态
+    fastify.get('/cache/status', {
+        schema: {
+            tags: ['鲸鱼发现'],
+            summary: '获取缓存状态',
+            response: {
+                200: {
+                    type: 'object',
+                    properties: {
+                        cachedCount: { type: 'number' },
+                        validCount: { type: 'number' },
+                        expiredCount: { type: 'number' },
+                    },
+                },
+            },
+        },
+    }, async () => {
+        const addresses = Object.keys(whaleCacheData);
+        let validCount = 0;
+        let expiredCount = 0;
+
+        for (const addr of addresses) {
+            if (isCacheValid(addr)) {
+                validCount++;
+            } else {
+                expiredCount++;
+            }
+        }
+
+        return {
+            cachedCount: addresses.length,
+            validCount,
+            expiredCount,
+        };
+    });
+
+
     // GET /api/whale/trades - 最近交易
     fastify.get('/trades', {
         schema: {
@@ -445,18 +621,35 @@ export async function whaleDiscoveryRoutes(fastify: FastifyInstance): Promise<vo
         },
     }, async (request: FastifyRequest<{ Params: { address: string }; Querystring: { period?: string } }>) => {
         const { address } = request.params;
-        const period = request.query.period || 'all';
+        const period = (request.query.period || 'all') as '24h' | '7d' | '30d' | 'all';
 
+        // 1. 尝试从缓存读取
+        const cached = getCachedPeriodData(address, period);
+        if (cached) {
+            return {
+                address,
+                period,
+                pnl: cached.pnl,
+                volume: cached.volume,
+                tradeCount: cached.tradeCount,
+                winRate: cached.winRate,
+                smartScore: cached.smartScore,
+                fromCache: true,
+            };
+        }
+
+        // 2. 缓存不存在或过期，实时请求并更新缓存
         if (!sdk) {
             sdk = new PolymarketSDK();
         }
 
-        // 转换时间段为天数
         const periodDays = period === '24h' ? 1 : period === '7d' ? 7 : period === '30d' ? 30 : 0;
 
         try {
-            // 使用 SDK 的分页方法获取完整交易记录并计算统计
             const stats = await sdk.wallets.getWalletProfileForPeriod(address, periodDays);
+
+            // 更新缓存（异步，不阻塞响应）
+            updateWhaleCache(address).catch(err => console.error('[WhaleCache] Async update failed:', err));
 
             return {
                 address,
@@ -466,6 +659,7 @@ export async function whaleDiscoveryRoutes(fastify: FastifyInstance): Promise<vo
                 tradeCount: stats.tradeCount,
                 winRate: stats.winRate,
                 smartScore: stats.smartScore,
+                fromCache: false,
             };
         } catch (error) {
             console.error(`[WhaleProfile] Error fetching profile for ${address}:`, error);

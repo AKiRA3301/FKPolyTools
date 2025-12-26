@@ -41,6 +41,9 @@ export const whaleApi = {
     updateConfig: (config: object) => api.put('/whale/config', config),
     getProfile: (address: string, period: '24h' | '7d' | '30d' | 'all' = 'all') =>
         api.get(`/whale/profile/${address}?period=${period}`),
+    // 缓存相关
+    refreshCache: () => api.post('/whale/cache/refresh'),
+    getCacheStatus: () => api.get('/whale/cache/status'),
 };
 
 export default api;
