@@ -267,13 +267,17 @@ export async function whaleDiscoveryRoutes(fastify: FastifyInstance): Promise<vo
             try {
                 const profile = await sdk!.wallets.getWalletProfile(address);
                 if (!profile) return null;
+
+                // 异步触发缓存预热（不阻塞分析流程）
+                updateWhaleCache(address).catch(err =>
+                    console.error(`[WhaleCache] Background cache failed for ${address}:`, err)
+                );
+
                 // 从 WalletProfile 映射到 WhaleDiscovery 的 WalletProfile
-                // SDK WalletProfile: totalPnL, realizedPnL, positionCount, tradeCount, smartScore
                 return {
                     pnl: profile.realizedPnL || 0,
-                    // 无法直接获取胜率，暂时用 avgPercentPnL 估算
                     winRate: profile.avgPercentPnL > 0 ? Math.min(0.8, 0.5 + profile.avgPercentPnL / 200) : 0.4,
-                    totalVolume: Math.abs(profile.totalPnL) * 10, // 估算交易量
+                    totalVolume: Math.abs(profile.totalPnL) * 10,
                     smartScore: profile.smartScore || 0,
                     totalTrades: profile.tradeCount || 0,
                 };
