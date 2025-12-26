@@ -79,21 +79,59 @@ function WhaleDiscovery() {
         }
     }, []);
 
-    // 加载时间段数据 - 顺序处理避免 Rate Limit，实时更新进度
+    // 加载时间段数据 - 优先使用批量缓存，秒级响应
     const loadPeriodData = useCallback(async (period: '24h' | '7d' | '30d' | 'all', addresses: string[]) => {
         if (addresses.length === 0) return;
 
         setLoadingPeriod(true);
-        // 清空旧数据，准备加载新数据
         setPeriodData({});
 
-        // 顺序请求，每完成一个立即更新显示
-        for (const address of addresses) {
-            try {
-                const res = await whaleApi.getProfile(address, period);
-                setPeriodData(prev => ({ ...prev, [address]: res.data }));
-            } catch {
-                setPeriodData(prev => ({ ...prev, [address]: { pnl: 0, volume: 0, tradeCount: 0, winRate: 0, smartScore: 0 } }));
+        try {
+            // 1. 先尝试批量获取缓存数据
+            const bulkRes = await whaleApi.getCacheBulk(addresses);
+            const bulkData = bulkRes.data as Record<string, { cached: boolean; periods?: any }>;
+
+            const newPeriodData: Record<string, any> = {};
+            const missingAddresses: string[] = [];
+
+            for (const addr of addresses) {
+                const cached = bulkData[addr];
+                if (cached?.cached && cached.periods?.[period]) {
+                    newPeriodData[addr] = cached.periods[period];
+                } else {
+                    missingAddresses.push(addr);
+                }
+            }
+
+            // 立即显示缓存数据
+            setPeriodData(newPeriodData);
+
+            // 2. 对于没有缓存的地址，顺序请求
+            if (missingAddresses.length > 0) {
+                for (const address of missingAddresses) {
+                    try {
+                        const res = await whaleApi.getProfile(address, period);
+                        setPeriodData(prev => ({ ...prev, [address]: res.data }));
+                    } catch {
+                        setPeriodData(prev => ({
+                            ...prev,
+                            [address]: { pnl: 0, volume: 0, tradeCount: 0, winRate: 0, smartScore: 0 }
+                        }));
+                    }
+                }
+            }
+        } catch {
+            // 批量接口失败，回退到顺序请求
+            for (const address of addresses) {
+                try {
+                    const res = await whaleApi.getProfile(address, period);
+                    setPeriodData(prev => ({ ...prev, [address]: res.data }));
+                } catch {
+                    setPeriodData(prev => ({
+                        ...prev,
+                        [address]: { pnl: 0, volume: 0, tradeCount: 0, winRate: 0, smartScore: 0 }
+                    }));
+                }
             }
         }
 

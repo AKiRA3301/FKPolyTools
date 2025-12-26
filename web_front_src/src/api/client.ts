@@ -44,6 +44,7 @@ export const whaleApi = {
     // 缓存相关
     refreshCache: () => api.post('/whale/cache/refresh'),
     getCacheStatus: () => api.get('/whale/cache/status'),
+    getCacheBulk: (addresses: string[]) => api.get(`/whale/cache/bulk?addresses=${addresses.join(',')}`),
 };
 
 // 版本 API

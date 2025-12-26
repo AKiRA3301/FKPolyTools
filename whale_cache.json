@@ -1,0 +1,101 @@
+{
+  "0x2663daca3cecf3767ca1c3b126002a8578a8ed1f": {
+    "updatedAt": 1766733420913,
+    "periods": {
+      "24h": {
+        "pnl": 2003.6024940002135,
+        "volume": 37609.19010000022,
+        "tradeCount": 9819,
+        "winRate": 0,
+        "smartScore": 86
+      },
+      "7d": {
+        "pnl": 2003.6024940002135,
+        "volume": 37609.19010000022,
+        "tradeCount": 9819,
+        "winRate": 0,
+        "smartScore": 86
+      },
+      "30d": {
+        "pnl": 2003.6024940002135,
+        "volume": 37609.19010000022,
+        "tradeCount": 9819,
+        "winRate": 0,
+        "smartScore": 86
+      },
+      "all": {
+        "pnl": 2003.6024940002135,
+        "volume": 37609.19010000022,
+        "tradeCount": 9819,
+        "winRate": 0,
+        "smartScore": 86
+      }
+    }
+  },
+  "0xc120935423b10e490a138a3bbb27f18b92bba562": {
+    "updatedAt": 1766733430436,
+    "periods": {
+      "24h": {
+        "pnl": 169.9224650000001,
+        "volume": 3939.5341549999994,
+        "tradeCount": 9,
+        "winRate": 0.5,
+        "smartScore": 64
+      },
+      "7d": {
+        "pnl": 169.9224650000001,
+        "volume": 3939.5341549999994,
+        "tradeCount": 9,
+        "winRate": 0.5,
+        "smartScore": 64
+      },
+      "30d": {
+        "pnl": 169.9224650000001,
+        "volume": 3939.5341549999994,
+        "tradeCount": 9,
+        "winRate": 0.5,
+        "smartScore": 64
+      },
+      "all": {
+        "pnl": 169.9224650000001,
+        "volume": 3939.5341549999994,
+        "tradeCount": 9,
+        "winRate": 0.5,
+        "smartScore": 64
+      }
+    }
+  },
+  "0xa61ef8773ec2e821962306ca87d4b57e39ff0abd": {
+    "updatedAt": 1766733527400,
+    "periods": {
+      "24h": {
+        "pnl": -108363.5187759968,
+        "volume": 142534.6313439965,
+        "tradeCount": 9995,
+        "winRate": 0.009385999217833398,
+        "smartScore": 40
+      },
+      "7d": {
+        "pnl": -108363.5187759968,
+        "volume": 142534.6313439965,
+        "tradeCount": 9995,
+        "winRate": 0.009385999217833398,
+        "smartScore": 40
+      },
+      "30d": {
+        "pnl": -108363.5187759968,
+        "volume": 142534.6313439965,
+        "tradeCount": 9995,
+        "winRate": 0.009385999217833398,
+        "smartScore": 40
+      },
+      "all": {
+        "pnl": -108363.5187759968,
+        "volume": 142534.6313439965,
+        "tradeCount": 9995,
+        "winRate": 0.009385999217833398,
+        "smartScore": 40
+      }
+    }
+  }
+}

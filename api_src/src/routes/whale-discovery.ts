@@ -492,6 +492,38 @@ export async function whaleDiscoveryRoutes(fastify: FastifyInstance): Promise<vo
         };
     });
 
+    // GET /api/whale/cache/bulk - 批量获取所有鲸鱼的缓存数据
+    fastify.get('/cache/bulk', {
+        schema: {
+            tags: ['鲸鱼发现'],
+            summary: '批量获取缓存数据',
+            querystring: {
+                type: 'object',
+                properties: {
+                    addresses: { type: 'string', description: '逗号分隔的地址列表' },
+                },
+            },
+        },
+    }, async (request: FastifyRequest<{ Querystring: { addresses?: string } }>) => {
+        const addressList = request.query.addresses?.split(',').filter(a => a) || [];
+
+        const result: Record<string, {
+            cached: boolean;
+            periods?: typeof whaleCacheData[string]['periods'];
+        }> = {};
+
+        for (const addr of addressList) {
+            const cached = whaleCacheData[addr];
+            if (cached && isCacheValid(addr)) {
+                result[addr] = { cached: true, periods: cached.periods };
+            } else {
+                result[addr] = { cached: false };
+            }
+        }
+
+        return result;
+    });
+
 
     // GET /api/whale/trades - 最近交易
     fastify.get('/trades', {
