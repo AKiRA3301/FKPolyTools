@@ -278,19 +278,23 @@ export class DataApiClient {
 
   /**
    * Get leaderboard page
+   * @param params.timePeriod - Time period filter: 'DAY', 'WEEK', 'MONTH', or 'ALL' (default)
    */
   async getLeaderboard(params?: {
     limit?: number;
     offset?: number;
+    timePeriod?: 'DAY' | 'WEEK' | 'MONTH' | 'ALL';
   }): Promise<LeaderboardPage> {
     const limit = params?.limit || 50;
     const offset = params?.offset || 0;
-    const cacheKey = `leaderboard:${offset}:${limit}`;
+    const timePeriod = params?.timePeriod || 'ALL';
+    const cacheKey = `leaderboard:${timePeriod}:${offset}:${limit}`;
 
     return this.cache.getOrSet(cacheKey, CACHE_TTL.LEADERBOARD, async () => {
       const query = new URLSearchParams({
         limit: String(limit),
         offset: String(offset),
+        timePeriod: timePeriod,
       });
 
       return this.rateLimiter.execute(ApiType.DATA_API, async () => {
@@ -318,14 +322,19 @@ export class DataApiClient {
 
   /**
    * Get all leaderboard entries up to a max count
+   * @param maxEntries Maximum entries to fetch
+   * @param timePeriod Time period filter: 'DAY', 'WEEK', 'MONTH', or 'ALL' (default)
    */
-  async getAllLeaderboard(maxEntries = 500): Promise<LeaderboardEntry[]> {
+  async getAllLeaderboard(
+    maxEntries = 500,
+    timePeriod: 'DAY' | 'WEEK' | 'MONTH' | 'ALL' = 'ALL'
+  ): Promise<LeaderboardEntry[]> {
     const all: LeaderboardEntry[] = [];
     let offset = 0;
     const limit = 50;
 
     while (all.length < maxEntries) {
-      const page = await this.getLeaderboard({ limit, offset });
+      const page = await this.getLeaderboard({ limit, offset, timePeriod });
       all.push(...page.entries);
       if (page.entries.length < limit) break;
       offset += limit;

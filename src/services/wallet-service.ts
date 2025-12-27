@@ -134,12 +134,8 @@ export class WalletService {
       await new Promise(r => setTimeout(r, 200));
     }
 
-    // 记录 trades 的最早时间戳，作为 redemptions 的截止点
-    const tradesOldestTimestamp = allTrades.length > 0
-      ? allTrades[allTrades.length - 1].timestamp
-      : thirtyDaysAgo;
-
-    // 分页拉取结算记录 (REDEEM) - 只回溯到与 trades 相同的日期
+    // 分页拉取结算记录 (REDEEM) - 独立使用 30 天限制，不受 trades 时间窗口约束
+    // 这很重要：用户可能在更早之前开仓，而赎回发生在近 30 天内
     let allRedemptions: Activity[] = [];
     let redemptionsTruncated = false;
     offset = 0;
@@ -151,13 +147,19 @@ export class WalletService {
       allRedemptions.push(...batch);
 
       const oldestInBatch = batch[batch.length - 1];
-      // 使用 trades 的最早时间戳作为截止点
-      if (oldestInBatch && oldestInBatch.timestamp < tradesOldestTimestamp) {
-        redemptionsTruncated = tradesTruncated; // 跟随 trades 的截断状态
+      // 使用 30 天作为独立截止点
+      if (oldestInBatch && oldestInBatch.timestamp < thirtyDaysAgo) {
+        redemptionsTruncated = true;
         break;
       }
 
       if (batch.length < PAGE_SIZE) break;
+
+      // Redemptions 也有上限
+      if (allRedemptions.length >= MAX_RECORDS) {
+        redemptionsTruncated = true;
+        break;
+      }
 
       offset += PAGE_SIZE;
       await new Promise(r => setTimeout(r, 200));

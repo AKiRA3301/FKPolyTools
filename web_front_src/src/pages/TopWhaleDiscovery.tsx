@@ -40,11 +40,36 @@ function TopWhaleDiscovery() {
         }).catch(() => { });
     }, []);
 
-    const loadLeaderboard = useCallback(async () => {
+    // 将前端时间段转换为API时间段
+    const mapPeriodToApi = (period: '24h' | '7d' | '30d' | 'all'): 'DAY' | 'WEEK' | 'MONTH' | 'ALL' => {
+        switch (period) {
+            case '24h': return 'DAY';
+            case '7d': return 'WEEK';
+            case '30d': return 'MONTH';
+            case 'all': return 'ALL';
+        }
+    };
+
+    const loadLeaderboard = useCallback(async (period: '24h' | '7d' | '30d' | 'all' = 'all') => {
         try {
             setLoading(true);
-            const res = await walletApi.getLeaderboard(500);
+            const apiPeriod = mapPeriodToApi(period);
+            const res = await walletApi.getLeaderboard(500, apiPeriod);
             setLeaderboard(res.data);
+
+            // 直接使用官方 PnL/Volume 数据（这是最准确的）
+            const initialData: Record<string, any> = {};
+            for (const entry of res.data) {
+                initialData[entry.address] = {
+                    pnl: entry.pnl,
+                    volume: entry.volume,
+                    tradeCount: entry.trades || null,
+                    winRate: null, // 后台填充
+                    smartScore: null,
+                    fromLeaderboard: true,
+                };
+            }
+            setPeriodData(initialData);
         } catch {
             setLeaderboard([]);
         } finally {
@@ -132,39 +157,25 @@ function TopWhaleDiscovery() {
     }, []);
 
     useEffect(() => {
-        loadLeaderboard();
+        loadLeaderboard(timePeriod);
         loadWatched();
-    }, [loadLeaderboard, loadWatched]);
+    }, [loadWatched]); // 初始加载
 
-    // 当时间段或数据变化时加载数据
+    // 当时间段变化时重新获取排行榜
+    useEffect(() => {
+        if (timePeriod) {
+            loadLeaderboard(timePeriod);
+        }
+    }, [timePeriod, loadLeaderboard]);
+
+    // 后台补充 tradeCount, winRate, smartScore（官方API不提供这些）
     useEffect(() => {
         if (leaderboard.length > 0) {
-            if (timePeriod === 'all') {
-                // ALL: 立即用 leaderboard 数据填充，同时后台拉取完整数据
-                const initialData: Record<string, any> = {};
-                for (const entry of leaderboard) {
-                    initialData[entry.address] = {
-                        pnl: entry.pnl,
-                        volume: entry.volume,
-                        tradeCount: entry.trades || null, // null 表示待加载
-                        winRate: null, // 待后台填充
-                        smartScore: null,
-                        fromLeaderboard: true, // 标记来源
-                    };
-                }
-                setPeriodData(initialData);
-
-                // 后台触发 Data API 拉取（不阻塞）
-                const addresses = leaderboard.map(w => w.address);
-                loadPeriodData(timePeriod, addresses);
-            } else {
-                // 其他时间段：检查缓存，无缓存则显示 loading
-                setPeriodData({});
-                const addresses = leaderboard.map(w => w.address);
-                loadPeriodData(timePeriod, addresses);
-            }
+            const addresses = leaderboard.map(w => w.address);
+            // 异步加载额外数据（胜率、评分等），不覆盖官方 PnL/Volume
+            loadPeriodData(timePeriod, addresses);
         }
-    }, [timePeriod, leaderboard, loadPeriodData]);
+    }, [leaderboard, timePeriod, loadPeriodData]);
 
     // 轮询机制：持续检查并合并后台数据
     useEffect(() => {
@@ -396,7 +407,7 @@ function TopWhaleDiscovery() {
                         <Space>
                             <Button
                                 icon={<ReloadOutlined />}
-                                onClick={loadLeaderboard}
+                                onClick={() => loadLeaderboard(timePeriod)}
                                 loading={loading}
                             >
                                 刷新排行榜

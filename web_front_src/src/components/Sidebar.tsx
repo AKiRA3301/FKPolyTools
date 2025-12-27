@@ -27,7 +27,7 @@ function Sidebar() {
         {
             key: '/arbitrage',
             icon: <SwapOutlined />,
-            label: 'YES+NO<1',
+            label: '套利 YES+NO=1',
         },
         {
             key: '/wallets',

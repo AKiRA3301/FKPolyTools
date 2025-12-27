@@ -23,7 +23,8 @@ export const arbitrageApi = {
 
 // 钱包 API
 export const walletApi = {
-    getLeaderboard: (limit = 500) => api.get(`/wallets/leaderboard?limit=${limit}`),
+    getLeaderboard: (limit = 500, timePeriod: 'DAY' | 'WEEK' | 'MONTH' | 'ALL' = 'ALL') =>
+        api.get(`/wallets/leaderboard?limit=${limit}&timePeriod=${timePeriod}`),
     getProfile: (address: string) => api.get(`/wallets/${address}/profile`),
     getPositions: (address: string) => api.get(`/wallets/${address}/positions`),
     getActivity: (address: string, limit = 50) => api.get(`/wallets/${address}/activity?limit=${limit}`),

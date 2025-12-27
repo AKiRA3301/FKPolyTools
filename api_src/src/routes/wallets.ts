@@ -18,13 +18,19 @@ export const walletRoutes: FastifyPluginAsync = async (fastify) => {
                 type: 'object',
                 properties: {
                     limit: { type: 'number', default: 200, description: '获取条目数量，最大500' },
+                    timePeriod: {
+                        type: 'string',
+                        enum: ['DAY', 'WEEK', 'MONTH', 'ALL'],
+                        default: 'ALL',
+                        description: '时间段：DAY=24小时, WEEK=7天, MONTH=30天, ALL=全部'
+                    },
                 },
             },
         },
         handler: async (request, reply) => {
-            const { limit = 200 } = request.query as { limit?: number };
+            const { limit = 200, timePeriod = 'ALL' } = request.query as { limit?: number; timePeriod?: 'DAY' | 'WEEK' | 'MONTH' | 'ALL' };
             // 使用分页 API 获取更多数据（每页50条，自动翻页）
-            const traders = await sdk.dataApi.getAllLeaderboard(Math.min(limit, 500));
+            const traders = await sdk.dataApi.getAllLeaderboard(Math.min(limit, 500), timePeriod);
 
             // 异步将排行榜地址加入缓存队列（不阻塞响应）
             const addresses = traders.map(t => t.address);

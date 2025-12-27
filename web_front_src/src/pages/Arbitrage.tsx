@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Table, Typography, Card, Spin, Alert, Button, Tag, Row, Col, Statistic } from 'antd';
+import { Table, Typography, Card, Alert, Button, Tag, Row, Col, Statistic } from 'antd';
 import { SyncOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import { arbitrageApi } from '../api/client';
 
@@ -37,8 +37,8 @@ function Arbitrage() {
         try {
             setLoading(true);
             setError(null);
-            // Adjusted params: minVolume 1000, minProfit 0.2%
-            const res = await arbitrageApi.scan(1000, 50, 0.002);
+            // Debug mode: minVolume $100, minProfit 0%
+            const res = await arbitrageApi.scan(100, 50, 0);
             setOpportunities(res.data.opportunities || []);
             setScannedAt(res.data.scannedAt);
         } catch (err) {
@@ -113,7 +113,7 @@ function Arbitrage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                 <Title level={3} style={{ color: '#fff', margin: 0 }}>
                     <ThunderboltOutlined style={{ marginRight: 8 }} />
-                    YES+NO &lt; 1
+                    套利 YES+NO=1
                 </Title>
                 <Button
                     type="primary"
@@ -155,20 +155,14 @@ function Arbitrage() {
                 </Col>
             </Row>
 
-            {loading ? (
-                <div style={{ textAlign: 'center', padding: 60 }}>
-                    <Spin size="large" />
-                    <p style={{ marginTop: 16, color: '#888' }}>扫描市场中...</p>
-                </div>
-            ) : (
-                <Table
-                    dataSource={opportunities}
-                    columns={columns}
-                    rowKey={(r) => r.market.conditionId}
-                    pagination={{ pageSize: 20 }}
-                    style={{ background: '#1f1f1f', borderRadius: 8 }}
-                />
-            )}
+            <Table
+                dataSource={opportunities}
+                columns={columns}
+                rowKey={(r) => r.market.conditionId}
+                pagination={{ pageSize: 20 }}
+                loading={loading}
+                style={{ background: '#1f1f1f', borderRadius: 8 }}
+            />
         </div>
     );
 }
